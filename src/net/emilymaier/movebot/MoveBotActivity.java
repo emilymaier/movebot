@@ -2,29 +2,22 @@ package net.emilymaier.movebot;
 
 import android.app.Activity;
 import android.content.Context;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageButton;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.UiSettings;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
-public class MoveBotActivity extends Activity implements LocationListener, OnMapReadyCallback
+public class MoveBotActivity extends Activity implements OnMapReadyCallback, ImageButton.OnClickListener
 {
-	private GoogleMap map;
-	private Polyline line;
-	private List<LatLng> points;
-	private LocationManager lm;
+	private Tracker tracker;
+	private ImageButton startStop;
+	private Timer locationStopTimer;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -36,42 +29,54 @@ public class MoveBotActivity extends Activity implements LocationListener, OnMap
 	}
 
 	@Override
+	protected void onStop()
+	{
+		super.onStop();
+		locationStopTimer = new Timer();
+		locationStopTimer.schedule(new TimerTask() {
+			@Override
+			public void run()
+			{
+				tracker.stopLocating();
+			}
+		}, 2 * 60 * 1000);
+	}
+
+	@Override
+	protected void onRestart()
+	{
+		super.onRestart();
+		if(locationStopTimer != null)
+		{
+			locationStopTimer.cancel();
+		}
+		tracker.startLocating();
+	}
+
+	@Override
+	public void onClick(View view)
+	{
+		synchronized(tracker)
+		{
+			if(!tracker.tracking)
+			{
+				tracker.startTracking();
+				startStop.setImageResource(android.R.drawable.ic_media_pause);
+			}
+			else
+			{
+				tracker.stopTracking();
+				startStop.setImageResource(android.R.drawable.ic_media_play);
+			}
+		}
+	}
+
+	@Override
 	public void onMapReady(GoogleMap map)
 	{
-		this.map = map;
-		UiSettings ui = this.map.getUiSettings();
-		ui.setZoomGesturesEnabled(false);
-		ui.setScrollGesturesEnabled(false);
-		ui.setTiltGesturesEnabled(false);
-		ui.setRotateGesturesEnabled(false);
-		PolylineOptions options = new PolylineOptions();
-		line = map.addPolyline(options);
-		points = new ArrayList<>();
-		lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-		lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-	}
-
-	@Override
-	public void onLocationChanged(Location location)
-	{
-		LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
-		map.animateCamera(CameraUpdateFactory.newLatLngZoom(ll, 16));
-		points.add(ll);
-		line.setPoints(points);
-	}
-
-	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras)
-	{
-	}
-
-	@Override
-	public void onProviderEnabled(String provider)
-	{
-	}
-
-	@Override
-	public void onProviderDisabled(String provider)
-	{
+		tracker = new Tracker(this, map);
+		tracker.startLocating();
+		startStop = (ImageButton) findViewById(R.id.startStop);
+		startStop.setOnClickListener(this);
 	}
 }
