@@ -10,8 +10,9 @@
 		android:layout_alignParentTop="true"
 		android:layout_centerHorizontal="true">
 		<TextView
+			android:id="@+id/timeLabel"
 			style="@style/ControlText"
-			android:text="Elapsed Time: " />
+			android:text="Time:" />
 		<Chronometer
 			android:id="@+id/timeText"
 			style="@style/ControlText" />
@@ -23,12 +24,36 @@
 		android:layout_below="@+id/layout1"
 		android:layout_centerHorizontal="true">
 		<TextView
+			android:id="@+id/speedLabel"
 			style="@style/ControlText"
-			android:text="Speed: " />
+			android:text="Speed:" />
 		<TextView
 			android:id="@+id/speedText"
 			style="@style/ControlText"
 			android:text="0.0" />
+		<TextView
+			android:id="@+id/speedUnits"
+			style="@style/ControlText"
+			android:text="mph" />
+	</LinearLayout>
+	<LinearLayout
+		android:id="@+id/layout3"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/layout2"
+		android:layout_centerHorizontal="true">
+		<TextView
+			android:id="@+id/distanceLabel"
+			style="@style/ControlText"
+			android:text="Distance:" />
+		<TextView
+			android:id="@+id/distanceText"
+			style="@style/ControlText"
+			android:text="0.00" />
+		<TextView
+			android:id="@+id/distanceUnits"
+			style="@style/ControlText"
+			android:text="miles" />
 	</LinearLayout>
 	<ImageButton
 		android:id="@+id/startStop"
@@ -36,7 +61,6 @@
 		android:layout_height="100dip"
 		android:layout_centerHorizontal="true"
 		android:layout_centerVertical="true"
-		android:background="@android:drawable/ic_media_play"
 		android:scaleType="centerInside" />
 	<Button
 		android:id="@+id/shareButton"
@@ -46,6 +70,7 @@
 		android:layout_alignParentBottom="true"
 		android:text="Share .gpx"
 		android:onClick="shareButtonClick"
-		android:visibility="invisible" />
+		android:visibility="invisible"
+		android:textColor="@color/control" />
 </RelativeLayout>
 

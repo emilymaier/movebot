@@ -42,6 +42,8 @@ public class Tracker implements LocationListener
 	public boolean locating = false;
 	public boolean tracking = false;
 
+	private double distance = 0.0;
+
 	public Tracker(MoveBotActivity act, GoogleMap map)
 	{
 		this.act = act;
@@ -82,6 +84,7 @@ public class Tracker implements LocationListener
 			return;
 		}
 		tracking = true;
+		distance = 0.0;
 		points = new ArrayList<>();
 		latLngs = new ArrayList<>();
 		try
@@ -142,6 +145,11 @@ public class Tracker implements LocationListener
 		map.animateCamera(CameraUpdateFactory.newLatLngZoom(ll, 16));
 		if(tracking)
 		{
+			if(!points.isEmpty())
+			{
+				Location lastLoc = points.get(points.size() - 1);
+				distance += lastLoc.distanceTo(location);
+			}
 			points.add(location);
 			latLngs.add(ll);
 			line.setPoints(latLngs);
@@ -164,6 +172,7 @@ public class Tracker implements LocationListener
 				throw new RuntimeException("IOException", e);
 			}
 			act.updateSpeed(location.getSpeed());
+			act.updateDistance(distance);
 		}
 	}
 

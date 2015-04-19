@@ -3,6 +3,10 @@ package net.emilymaier.movebot;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.PorterDuff;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -26,6 +30,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 
 import java.io.File;
+import java.text.DecimalFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -79,9 +84,24 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 		{
 			View rootView = inflater.inflate(R.layout.main_control, container, false);
+			timeLabel = (TextView) rootView.findViewById(R.id.timeLabel);
+			timeLabel.setTypeface(font);
 			timeText = (Chronometer) rootView.findViewById(R.id.timeText);
+			timeText.setTypeface(font);
+			speedLabel = (TextView) rootView.findViewById(R.id.speedLabel);
+			speedLabel.setTypeface(font);
 			speedText = (TextView) rootView.findViewById(R.id.speedText);
+			speedText.setTypeface(font);
+			speedUnits = (TextView) rootView.findViewById(R.id.speedUnits);
+			speedUnits.setTypeface(font);
+			distanceLabel = (TextView) rootView.findViewById(R.id.distanceLabel);
+			distanceLabel.setTypeface(font);
+			distanceText = (TextView) rootView.findViewById(R.id.distanceText);
+			distanceText.setTypeface(font);
+			distanceUnits = (TextView) rootView.findViewById(R.id.distanceUnits);
+			distanceUnits.setTypeface(font);
 			startStop = (ImageButton) rootView.findViewById(R.id.startStop);
+			startStop.setBackground(play);
 			shareButton = (Button) rootView.findViewById(R.id.shareButton);
 			return rootView;
 		}
@@ -100,13 +120,13 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 					tracker.startTracking();
 					timeText.setBase(SystemClock.elapsedRealtime());
 					timeText.start();
-					startStop.setBackgroundResource(android.R.drawable.ic_media_pause);
+					startStop.setBackground(pause);
 				}
 				else
 				{
 					timeText.stop();
 					tracker.stopTracking();
-					startStop.setBackgroundResource(android.R.drawable.ic_media_play);
+					startStop.setBackground(play);
 					shareButton.setVisibility(View.VISIBLE);
 				}
 			}
@@ -119,8 +139,19 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	private SupportMapFragment mapFragment;
 
 	private Tracker tracker;
+
+	private Typeface font;
+	private Drawable play;
+	private Drawable pause;
+
+	private TextView timeLabel;
 	private Chronometer timeText;
+	private TextView speedLabel;
 	private TextView speedText;
+	private TextView speedUnits;
+	private TextView distanceLabel;
+	private TextView distanceText;
+	private TextView distanceUnits;
 	private ImageButton startStop;
 	private Button shareButton;
 
@@ -132,6 +163,12 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+		font = Typeface.createFromAsset(getAssets(), "fonts/led_real.ttf");
+		Resources res = getResources();
+		play = res.getDrawable(android.R.drawable.ic_media_play);
+		play.setColorFilter(res.getColor(R.color.control), PorterDuff.Mode.MULTIPLY);
+		pause = res.getDrawable(android.R.drawable.ic_media_pause);
+		pause.setColorFilter(res.getColor(R.color.control), PorterDuff.Mode.MULTIPLY);
 		pager = (ViewPager) findViewById(R.id.pager);
 		adapter = new MainPagerAdapter(getSupportFragmentManager());
 		controlFragment = new ControlFragment();
@@ -175,7 +212,16 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 
 	public void updateSpeed(double speed)
 	{
-		speedText.setText(String.valueOf(speed));
+		speed *= 2.23694;
+		DecimalFormat df = new DecimalFormat("#0.0");
+		speedText.setText(df.format(speed));
+	}
+
+	public void updateDistance(double distance)
+	{
+		distance *= 0.000621371;
+		DecimalFormat df = new DecimalFormat("##0.00");
+		distanceText.setText(df.format(distance));
 	}
 
 	public void shareButtonClick(View view)
