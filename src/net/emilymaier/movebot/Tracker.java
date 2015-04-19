@@ -14,8 +14,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,13 +23,12 @@ import org.xmlpull.v1.XmlSerializer;
 
 public class Tracker implements LocationListener
 {
-	private Context context;
 	private GoogleMap map;
 	private Polyline line;
 	private List<LatLng> points;
 
 	private XmlSerializer xml;
-	private FileOutputStream xmlStream;
+	private StringWriter xmlWriter;
 
 	private LocationManager lm;
 
@@ -38,7 +37,6 @@ public class Tracker implements LocationListener
 
 	public Tracker(Context context, GoogleMap map)
 	{
-		this.context = context;
 		this.map = map;
 		UiSettings ui = this.map.getUiSettings();
 		ui.setZoomGesturesEnabled(false);
@@ -50,7 +48,7 @@ public class Tracker implements LocationListener
 
 		xml = Xml.newSerializer();
 
-		lm = (LocationManager) this.context.getSystemService(Context.LOCATION_SERVICE);
+		lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
 	}
 
 	public synchronized void startLocating()
@@ -73,8 +71,8 @@ public class Tracker implements LocationListener
 		points = new ArrayList<>();
 		try
 		{
-			xmlStream = context.openFileOutput("track.gpx", Context.MODE_PRIVATE);
-			xml.setOutput(xmlStream, "UTF-8");
+			xmlWriter = new StringWriter();
+			xml.setOutput(xmlWriter);
 			xml.startDocument("UTF-8", true);
 			xml.startTag("", "gpx");
 			xml.attribute("", "version", "1.1");
@@ -88,11 +86,11 @@ public class Tracker implements LocationListener
 		}
 	}
 
-	public synchronized void stopTracking()
+	public synchronized String stopTracking()
 	{
 		if(!tracking)
 		{
-			return;
+			return null;
 		}
 		tracking = false;
 		try
@@ -101,7 +99,7 @@ public class Tracker implements LocationListener
 			xml.endTag("", "trk");
 			xml.endTag("", "gpx");
 			xml.endDocument();
-			xmlStream.close();
+			return xmlWriter.toString();
 		}
 		catch(IOException e)
 		{
