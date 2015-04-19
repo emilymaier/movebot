@@ -1,6 +1,7 @@
 package net.emilymaier.movebot;
 
 import android.content.Context;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -14,29 +15,36 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.xmlpull.v1.XmlSerializer;
 
 public class Tracker implements LocationListener
 {
+	private MoveBotActivity act;
+
 	private GoogleMap map;
 	private Polyline line;
-	private List<LatLng> points;
+	private List<Location> points;
+	private List<LatLng> latLngs;
 
 	private XmlSerializer xml;
-	private StringWriter xmlWriter;
+	private FileOutputStream xmlStream;
 
 	private LocationManager lm;
+	private Criteria criteria;
 
 	public boolean locating = false;
 	public boolean tracking = false;
 
-	public Tracker(Context context, GoogleMap map)
+	public Tracker(MoveBotActivity act, GoogleMap map)
 	{
+		this.act = act;
 		this.map = map;
 		UiSettings ui = this.map.getUiSettings();
 		ui.setZoomGesturesEnabled(false);
@@ -48,7 +56,13 @@ public class Tracker implements LocationListener
 
 		xml = Xml.newSerializer();
 
-		lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+		lm = (LocationManager) this.act.getSystemService(Context.LOCATION_SERVICE);
+		criteria = new Criteria();
+		criteria.setAccuracy(Criteria.ACCURACY_FINE);
+		criteria.setAltitudeRequired(true);
+		criteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
+		criteria.setSpeedRequired(true);
+		criteria.setSpeedAccuracy(Criteria.ACCURACY_HIGH);
 	}
 
 	public synchronized void startLocating()
@@ -58,7 +72,7 @@ public class Tracker implements LocationListener
 			return;
 		}
 		locating = true;
-		lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+		lm.requestLocationUpdates(0, 0, criteria, this, null);
 	}
 
 	public synchronized void startTracking()
@@ -69,16 +83,20 @@ public class Tracker implements LocationListener
 		}
 		tracking = true;
 		points = new ArrayList<>();
+		latLngs = new ArrayList<>();
 		try
 		{
-			xmlWriter = new StringWriter();
-			xml.setOutput(xmlWriter);
+			xmlStream = act.openFileOutput("track.gpx", Context.MODE_PRIVATE);
+			xml.setOutput(xmlStream, "utf-8");
 			xml.startDocument("UTF-8", true);
 			xml.startTag("", "gpx");
+			xml.attribute("", "xmlns", "http://www.topografix.com/GPX/1/1");
+			xml.attribute("xmlns", "xsi", "http://www.w3.org/2001/XMLSchema-instance");
+			xml.attribute("xsi", "schemaLocation", "http://www.topografix.com/GPX/1/1 gpx.xsd");
 			xml.attribute("", "version", "1.1");
 			xml.attribute("", "creator", "Move Bot");
 			xml.startTag("", "trk");
-			xml.startTag("", "trkSeg");
+			xml.startTag("", "trkseg");
 		}
 		catch(IOException e)
 		{
@@ -86,20 +104,20 @@ public class Tracker implements LocationListener
 		}
 	}
 
-	public synchronized String stopTracking()
+	public synchronized void stopTracking()
 	{
 		if(!tracking)
 		{
-			return null;
+			return;
 		}
 		tracking = false;
 		try
 		{
-			xml.endTag("", "trkSeg");
+			xml.endTag("", "trkseg");
 			xml.endTag("", "trk");
 			xml.endTag("", "gpx");
 			xml.endDocument();
-			return xmlWriter.toString();
+			xmlStream.close();
 		}
 		catch(IOException e)
 		{
@@ -124,19 +142,28 @@ public class Tracker implements LocationListener
 		map.animateCamera(CameraUpdateFactory.newLatLngZoom(ll, 16));
 		if(tracking)
 		{
-			points.add(ll);
-			line.setPoints(points);
+			points.add(location);
+			latLngs.add(ll);
+			line.setPoints(latLngs);
 			try
 			{
-				xml.startTag("", "wpt");
+				xml.startTag("", "trkpt");
 				xml.attribute("", "lat", String.valueOf(ll.latitude));
 				xml.attribute("", "lon", String.valueOf(ll.longitude));
-				xml.endTag("", "wpt");
+				xml.startTag("", "ele");
+				xml.text(String.valueOf(location.getAltitude()));
+				xml.endTag("", "ele");
+				xml.startTag("", "time");
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-DD'T'kk:mm:ss");
+				xml.text(sdf.format(new Date(location.getTime())));
+				xml.endTag("", "time");
+				xml.endTag("", "trkpt");
 			}
 			catch(IOException e)
 			{
 				throw new RuntimeException("IOException", e);
 			}
+			act.updateSpeed(location.getSpeed());
 		}
 	}
 

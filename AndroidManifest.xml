@@ -19,6 +19,15 @@
 		android:value="@integer/google_play_services_version" />
 	<meta-data android:name="com.google.android.geo.API_KEY"
 		android:value="AIzaSyAfmoZT-wo632dkyCtY8H8gUvFN7mKem4E" />
+	<provider
+		android:name="android.support.v4.content.FileProvider"
+		android:authorities="net.emilymaier.movebot.fileprovider"
+		android:grantUriPermissions="true"
+		android:exported="false">
+		<meta-data
+			android:name="android.support.FILE_PROVIDER_PATHS"
+			android:resource="@xml/filepaths" />
+	</provider>
     </application>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

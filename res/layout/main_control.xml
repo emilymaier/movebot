@@ -3,12 +3,49 @@
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent">
-	<ImageButton
-		android:id="@+id/startStop"
+	<LinearLayout
+		android:id="@+id/layout1"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
+		android:layout_alignParentTop="true"
+		android:layout_centerHorizontal="true">
+		<TextView
+			style="@style/ControlText"
+			android:text="Elapsed Time: " />
+		<Chronometer
+			android:id="@+id/timeText"
+			style="@style/ControlText" />
+	</LinearLayout>
+	<LinearLayout
+		android:id="@+id/layout2"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/layout1"
+		android:layout_centerHorizontal="true">
+		<TextView
+			style="@style/ControlText"
+			android:text="Speed: " />
+		<TextView
+			android:id="@+id/speedText"
+			style="@style/ControlText"
+			android:text="0.0" />
+	</LinearLayout>
+	<ImageButton
+		android:id="@+id/startStop"
+		android:layout_width="100dip"
+		android:layout_height="100dip"
 		android:layout_centerHorizontal="true"
 		android:layout_centerVertical="true"
-		android:src="@android:drawable/ic_media_play" />
+		android:background="@android:drawable/ic_media_play"
+		android:scaleType="centerInside" />
+	<Button
+		android:id="@+id/shareButton"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentLeft="true"
+		android:layout_alignParentBottom="true"
+		android:text="Share .gpx"
+		android:onClick="shareButtonClick"
+		android:visibility="invisible" />
 </RelativeLayout>
 

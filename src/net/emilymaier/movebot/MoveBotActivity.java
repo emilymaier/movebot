@@ -3,26 +3,33 @@ package net.emilymaier.movebot;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.Chronometer;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.FileProvider;
 import android.support.v4.view.ViewPager;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 
+import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallback, ImageButton.OnClickListener
+public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallback
 {
 	private class MainPagerAdapter extends FragmentPagerAdapter
 	{
@@ -72,8 +79,37 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 		{
 			View rootView = inflater.inflate(R.layout.main_control, container, false);
+			timeText = (Chronometer) rootView.findViewById(R.id.timeText);
+			speedText = (TextView) rootView.findViewById(R.id.speedText);
 			startStop = (ImageButton) rootView.findViewById(R.id.startStop);
+			shareButton = (Button) rootView.findViewById(R.id.shareButton);
 			return rootView;
+		}
+	}
+
+	private class StartStopClick implements View.OnClickListener
+	{
+		@Override
+		public void onClick(View view)
+		{
+			synchronized(tracker)
+			{
+				if(!tracker.tracking)
+				{
+					shareButton.setVisibility(View.INVISIBLE);
+					tracker.startTracking();
+					timeText.setBase(SystemClock.elapsedRealtime());
+					timeText.start();
+					startStop.setBackgroundResource(android.R.drawable.ic_media_pause);
+				}
+				else
+				{
+					timeText.stop();
+					tracker.stopTracking();
+					startStop.setBackgroundResource(android.R.drawable.ic_media_play);
+					shareButton.setVisibility(View.VISIBLE);
+				}
+			}
 		}
 	}
 
@@ -83,7 +119,11 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	private SupportMapFragment mapFragment;
 
 	private Tracker tracker;
+	private Chronometer timeText;
+	private TextView speedText;
 	private ImageButton startStop;
+	private Button shareButton;
+
 	private Timer locationStopTimer;
 
 	/** Called when the activity is first created. */
@@ -126,33 +166,27 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	}
 
 	@Override
-	public void onClick(View view)
-	{
-		synchronized(tracker)
-		{
-			if(!tracker.tracking)
-			{
-				tracker.startTracking();
-				startStop.setImageResource(android.R.drawable.ic_media_pause);
-			}
-			else
-			{
-				String gpx = tracker.stopTracking();
-				startStop.setImageResource(android.R.drawable.ic_media_play);
-				Intent sendIntent = new Intent();
-				sendIntent.setAction(Intent.ACTION_SEND);
-				sendIntent.putExtra(Intent.EXTRA_TEXT, gpx);
-				sendIntent.setType("application/xml");
-				startActivity(sendIntent);
-			}
-		}
-	}
-
-	@Override
 	public void onMapReady(GoogleMap map)
 	{
 		tracker = new Tracker(this, map);
 		tracker.startLocating();
-		startStop.setOnClickListener(this);
+		startStop.setOnClickListener(new StartStopClick());
+	}
+
+	public void updateSpeed(double speed)
+	{
+		speedText.setText(String.valueOf(speed));
+	}
+
+	public void shareButtonClick(View view)
+	{
+		File gpxFile = new File(getFilesDir(), "track.gpx");
+		Uri gpxUri = FileProvider.getUriForFile(this, "net.emilymaier.movebot.fileprovider", gpxFile);
+		Intent sendIntent = new Intent();
+		sendIntent.setAction(Intent.ACTION_SEND);
+		sendIntent.putExtra(Intent.EXTRA_STREAM, gpxUri);
+		sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+		sendIntent.setType("application/xml");
+		startActivity(sendIntent);
 	}
 }
