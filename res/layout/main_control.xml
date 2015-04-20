@@ -62,6 +62,13 @@
 		android:layout_centerHorizontal="true"
 		android:layout_centerVertical="true"
 		android:scaleType="centerInside" />
+	<TextView
+		android:id="@+id/gpsInfo"
+		style="@style/ControlText"
+		android:layout_below="@+id/startStop"
+		android:layout_centerHorizontal="true"
+		android:text="Acquiring GPS"
+		android:textColor="@color/red" />
 	<Button
 		android:id="@+id/shareButton"
 		android:layout_width="wrap_content"

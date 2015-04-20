@@ -102,6 +102,8 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 			distanceUnits.setTypeface(font);
 			startStop = (ImageButton) rootView.findViewById(R.id.startStop);
 			startStop.setBackground(play);
+			gpsInfo = (TextView) rootView.findViewById(R.id.gpsInfo);
+			gpsInfo.setTypeface(font);
 			shareButton = (Button) rootView.findViewById(R.id.shareButton);
 			return rootView;
 		}
@@ -133,6 +135,38 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		}
 	}
 
+	private class GpsInfoTask extends TimerTask
+	{
+		@Override
+		public void run()
+		{
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run()
+				{
+					Resources res = getResources();
+					if(SystemClock.elapsedRealtime() - lastGpsTime > 5000)
+					{
+						gpsInfo.setText("Acquiring GPS");
+						gpsInfo.setTextColor(res.getColor(R.color.red));
+					}
+					else if(lastGpsAccuracy > 10.0)
+					{
+						gpsInfo.setText("GPS Fair");
+						gpsInfo.setTextColor(res.getColor(R.color.yellow));
+					}
+					else
+					{
+						gpsInfo.setText("GPS Good");
+						gpsInfo.setTextColor(res.getColor(R.color.green));
+					}
+					gpsInfoTimer = new Timer();
+					gpsInfoTimer.schedule(new GpsInfoTask(), 2 * 1000);
+				}
+			});
+		}
+	}
+
 	private ViewPager pager;
 	private FragmentPagerAdapter adapter;
 	private ControlFragment controlFragment;
@@ -153,12 +187,16 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	private TextView distanceText;
 	private TextView distanceUnits;
 	private ImageButton startStop;
+	private TextView gpsInfo;
 	private Button shareButton;
 
-	private Timer locationStopTimer;
+	private long lastGpsTime = 0;
+	private double lastGpsAccuracy = 10000.0;
+	private Timer gpsInfoTimer;
 
 	/** Called when the activity is first created. */
 	@Override
+	@SuppressWarnings("deprecation")
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
@@ -174,6 +212,8 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		controlFragment = new ControlFragment();
 		mapFragment = SupportMapFragment.newInstance();
 		pager.setAdapter(adapter);
+		gpsInfoTimer = new Timer();
+		gpsInfoTimer.schedule(new GpsInfoTask(), 2 * 1000);
 		mapFragment.getMapAsync(this);
 	}
 
@@ -181,24 +221,19 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	protected void onStop()
 	{
 		super.onStop();
-		locationStopTimer = new Timer();
-		locationStopTimer.schedule(new TimerTask() {
-			@Override
-			public void run()
+		synchronized(tracker)
+		{
+			if(!tracker.tracking)
 			{
 				tracker.stopLocating();
 			}
-		}, 2 * 60 * 1000);
+		}
 	}
 
 	@Override
 	protected void onRestart()
 	{
 		super.onRestart();
-		if(locationStopTimer != null)
-		{
-			locationStopTimer.cancel();
-		}
 		tracker.startLocating();
 	}
 
@@ -210,18 +245,20 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		startStop.setOnClickListener(new StartStopClick());
 	}
 
-	public void updateSpeed(double speed)
+	public void updateStats(double speed, double distance)
 	{
 		speed *= 2.23694;
 		DecimalFormat df = new DecimalFormat("#0.0");
 		speedText.setText(df.format(speed));
+		distance *= 0.000621371;
+		df = new DecimalFormat("##0.00");
+		distanceText.setText(df.format(distance));
 	}
 
-	public void updateDistance(double distance)
+	public void updateGps(double accuracy)
 	{
-		distance *= 0.000621371;
-		DecimalFormat df = new DecimalFormat("##0.00");
-		distanceText.setText(df.format(distance));
+		lastGpsTime = SystemClock.elapsedRealtime();
+		lastGpsAccuracy = accuracy;
 	}
 
 	public void shareButtonClick(View view)

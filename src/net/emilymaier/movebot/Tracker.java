@@ -171,9 +171,9 @@ public class Tracker implements LocationListener
 			{
 				throw new RuntimeException("IOException", e);
 			}
-			act.updateSpeed(location.getSpeed());
-			act.updateDistance(distance);
+			act.updateStats(location.getSpeed(), distance);
 		}
+		act.updateGps(location.getAccuracy());
 	}
 
 	@Override
