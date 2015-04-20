@@ -1,3 +1,35 @@
+/**
+ * Copyright © 2015 Emily Maier
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of version 2 of the GNU General Public License as published by the
+ * Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program; if not, see <http://www.gnu.org/licenses>.
+ *
+ * Linking MoveBot statically or dynamically with other modules is making a
+ * combined work based on MoveBot. Thus, the terms and conditions of the GNU
+ * General Public License cover the whole combination.
+ *
+ * In addition, as a special exception, the copyright holders of MoveBot give
+ * you permission to combine MoveBot with code included in the standard release
+ * of the Google Play Services Library. You may copy and distribute such a
+ * system following the terms of the GNU GPL for MoveBot and the licenses of
+ * the Google Play Services Library.
+ *
+ * Note that people who make modified versions of MoveBot are not obligated to
+ * grant this special exception for their modified versions; it is their choice
+ * whether to do so. The GNU General Public License gives permission to release
+ * a modified version without this exception; this exception also makes it
+ * possible to release a modified version which carries forward this exception.
+ */
+
 package net.emilymaier.movebot;
 
 import android.app.Activity;
@@ -34,8 +66,15 @@ import java.text.DecimalFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 
+/**
+ * The only activity for MoveBot. Runs the entire app.
+ */
 public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallback
 {
+	/**
+	 * FragmentPagerAdapter for the activity pages. Returns the control and
+	 * map fragments.
+	 */
 	private class MainPagerAdapter extends FragmentPagerAdapter
 	{
 		public MainPagerAdapter(FragmentManager fm)
@@ -78,6 +117,10 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		}
 	}
 
+	/**
+	 * Fragment for the app controls. Contains the statistics about the
+	 * current run, the play/pause button, and the share button.
+	 */
 	private class ControlFragment extends Fragment
 	{
 		@Override
@@ -109,6 +152,10 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		}
 	}
 
+	/**
+	 * Listener for the start/stop button. Begins and ends a running
+	 * session.
+	 */
 	private class StartStopClick implements View.OnClickListener
 	{
 		@Override
@@ -135,6 +182,9 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		}
 	}
 
+	/**
+	 * TimerTask that updates the GPS status line on the controls page.
+	 */
 	private class GpsInfoTask extends TimerTask
 	{
 		@Override
@@ -194,7 +244,6 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	private double lastGpsAccuracy = 10000.0;
 	private Timer gpsInfoTimer;
 
-	/** Called when the activity is first created. */
 	@Override
 	@SuppressWarnings("deprecation")
 	public void onCreate(Bundle savedInstanceState)
@@ -245,6 +294,12 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		startStop.setOnClickListener(new StartStopClick());
 	}
 
+	/**
+	 * Called by the Tracker to update the statistics for the running
+	 * session.
+	 * @param speed the current speed
+	 * @param distance the total distance traveled
+	 */
 	public void updateStats(double speed, double distance)
 	{
 		speed *= 2.23694;
@@ -255,12 +310,21 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		distanceText.setText(df.format(distance));
 	}
 
+	/**
+	 * Called by the Tracker to update the GPS accuracy and timing info.
+	 * @param accuracy the accuracy of the latest GPS location
+	 */
 	public void updateGps(double accuracy)
 	{
 		lastGpsTime = SystemClock.elapsedRealtime();
 		lastGpsAccuracy = accuracy;
 	}
 
+	/**
+	 * Listener for the share button. Shares the current .gpx file with any
+	 * app capable of receiving it.
+	 * @param view the share button
+	 */
 	public void shareButtonClick(View view)
 	{
 		File gpxFile = new File(getFilesDir(), "track.gpx");
