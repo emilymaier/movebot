@@ -45,9 +45,11 @@ import android.os.SystemClock;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Chronometer;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import android.support.v4.app.Fragment;
@@ -62,7 +64,17 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -72,8 +84,8 @@ import java.util.TimerTask;
 public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallback
 {
 	/**
-	 * FragmentPagerAdapter for the activity pages. Returns the control and
-	 * map fragments.
+	 * FragmentPagerAdapter for the activity pages. Returns the fragments in
+	 * the main activity.
 	 */
 	private class MainPagerAdapter extends FragmentPagerAdapter
 	{
@@ -85,7 +97,7 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		@Override
 		public int getCount()
 		{
-			return 2;
+			return 3;
 		}
 
 		@Override
@@ -94,8 +106,10 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 			switch(position)
 			{
 				case 0:
-					return controlFragment;
+					return runsFragment;
 				case 1:
+					return controlFragment;
+				case 2:
 					return mapFragment;
 				default:
 					return null;
@@ -108,12 +122,70 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 			switch(position)
 			{
 				case 0:
-					return "Control";
+					return "Runs";
 				case 1:
+					return "Control";
+				case 2:
 					return "Map";
 				default:
 					return null;
 			}
+		}
+	}
+
+	/**
+	 * Fragment for the list of run sessions.
+	 */
+	private class RunsFragment extends Fragment
+	{
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+		{
+			View rootView = inflater.inflate(R.layout.main_runs, container, false);
+			runsList = (ListView) rootView.findViewById(R.id.runsList);
+			runsListAdapter = new RunsListAdapter(getActivity());
+			runsList.setAdapter(runsListAdapter);
+			return rootView;
+		}
+	}
+
+	/**
+	 * ListView adapter for the runs fragment.
+	 */
+	private class RunsListAdapter extends ArrayAdapter<Run>
+	{
+		private Context context;
+
+		public RunsListAdapter(Context context)
+		{
+			super(context, R.layout.main_runs_item, runs);
+			this.context = context;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent)
+		{
+			Run currentRun = runs.get(position);
+			LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			View rowView = inflater.inflate(R.layout.main_runs_item, parent, false);
+			TextView runItemTime = (TextView) rowView.findViewById(R.id.runItemTime);
+			runItemTime.setText(DateFormat.getDateTimeInstance().format(new Date(currentRun.getStartTime())));
+			TextView runItemDistance = (TextView) rowView.findViewById(R.id.runItemDistance);
+			DecimalFormat df = new DecimalFormat("##0.00");
+			runItemDistance.setText(df.format(currentRun.getDistance() * 0.000621371));
+			TextView runItemSpeed = (TextView) rowView.findViewById(R.id.runItemSpeed);
+			df = new DecimalFormat("#0.0");
+			runItemSpeed.setText(df.format(currentRun.getAverageSpeed() * 2.23694));
+			Button runItemShare = (Button) rowView.findViewById(R.id.runItemShare);
+			runItemShare.setTag(position);
+			runItemShare.setOnClickListener(new View.OnClickListener () {
+				@Override
+				public void onClick(View view)
+				{
+					shareGpx(runs.get((int) view.getTag()));
+				}
+			});
+			return rowView;
 		}
 	}
 
@@ -174,7 +246,8 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 				else
 				{
 					timeText.stop();
-					tracker.stopTracking();
+					runs.add(0, tracker.stopTracking());
+					runsListAdapter.notifyDataSetChanged();
 					startStop.setBackground(play);
 					shareButton.setVisibility(View.VISIBLE);
 				}
@@ -219,15 +292,19 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 
 	private ViewPager pager;
 	private FragmentPagerAdapter adapter;
+	private RunsFragment runsFragment;
 	private ControlFragment controlFragment;
 	private SupportMapFragment mapFragment;
 
 	private Tracker tracker;
+	private ArrayList<Run> runs;
 
+	private RunsListAdapter runsListAdapter;
 	private Typeface font;
 	private Drawable play;
 	private Drawable pause;
 
+	private ListView runsList;
 	private TextView timeLabel;
 	private Chronometer timeText;
 	private TextView speedLabel;
@@ -245,11 +322,33 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	private Timer gpsInfoTimer;
 
 	@Override
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({"deprecation", "unchecked"})
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+
+		runs = new ArrayList<>();
+		try
+		{
+			FileInputStream fis = openFileInput("runs.ser");
+			ObjectInputStream ois = new ObjectInputStream(fis);
+			runs = (ArrayList<Run>) ois.readObject();
+			ois.close();
+			fis.close();
+		}
+		catch(FileNotFoundException e)
+		{
+		}
+		catch(IOException e)
+		{
+			throw new RuntimeException("IOException", e);
+		}
+		catch(ClassNotFoundException e)
+		{
+			throw new RuntimeException("ClassNotFoundException", e);
+		}
+
 		font = Typeface.createFromAsset(getAssets(), "fonts/led_real.ttf");
 		Resources res = getResources();
 		play = res.getDrawable(android.R.drawable.ic_media_play);
@@ -258,9 +357,11 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		pause.setColorFilter(res.getColor(R.color.control), PorterDuff.Mode.MULTIPLY);
 		pager = (ViewPager) findViewById(R.id.pager);
 		adapter = new MainPagerAdapter(getSupportFragmentManager());
+		runsFragment = new RunsFragment();
 		controlFragment = new ControlFragment();
 		mapFragment = SupportMapFragment.newInstance();
 		pager.setAdapter(adapter);
+		pager.setCurrentItem(1);
 		gpsInfoTimer = new Timer();
 		gpsInfoTimer.schedule(new GpsInfoTask(), 2 * 1000);
 		mapFragment.getMapAsync(this);
@@ -276,6 +377,18 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 			{
 				tracker.stopLocating();
 			}
+		}
+		try
+		{
+			FileOutputStream fos = openFileOutput("runs.ser", Context.MODE_PRIVATE);
+			ObjectOutputStream oos = new ObjectOutputStream(fos);
+			oos.writeObject(runs);
+			oos.close();
+			fos.close();
+		}
+		catch(IOException e)
+		{
+			throw new RuntimeException("IOException", e);
 		}
 	}
 
@@ -321,12 +434,19 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	}
 
 	/**
-	 * Listener for the share button. Shares the current .gpx file with any
-	 * app capable of receiving it.
-	 * @param view the share button
+	 * Generate a run's .gpx file and share it.
+	 * @param run the run session to generate the .gpx from
 	 */
-	public void shareButtonClick(View view)
+	private void shareGpx(Run run)
 	{
+		try
+		{
+			run.generateGpx(this);
+		}
+		catch(IOException e)
+		{
+			throw new RuntimeException("IOException", e);
+		}
 		File gpxFile = new File(getFilesDir(), "track.gpx");
 		Uri gpxUri = FileProvider.getUriForFile(this, "net.emilymaier.movebot.fileprovider", gpxFile);
 		Intent sendIntent = new Intent();
@@ -335,5 +455,14 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 		sendIntent.setType("application/xml");
 		startActivity(sendIntent);
+	}
+
+	/**
+	 * Listener for the share button. Shares the .gpx of the latest run.
+	 * @param view the share button
+	 */
+	public void shareButtonClick(View view)
+	{
+		shareGpx(runs.get(0));
 	}
 }

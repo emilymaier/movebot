@@ -38,7 +38,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Xml;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -47,14 +46,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-
-import org.xmlpull.v1.XmlSerializer;
 
 /**
  * Manages the Google map fragment and the GPS information.
@@ -65,19 +58,15 @@ public class Tracker implements LocationListener
 
 	private GoogleMap map;
 	private Polyline line;
-	private List<Location> points;
 	private List<LatLng> latLngs;
-
-	private XmlSerializer xml;
-	private FileOutputStream xmlStream;
 
 	private LocationManager lm;
 	private Criteria criteria;
 
+	private Run run;
+
 	public boolean locating = false;
 	public boolean tracking = false;
-
-	private double distance = 0.0;
 
 	public Tracker(MoveBotActivity act, GoogleMap map)
 	{
@@ -90,8 +79,6 @@ public class Tracker implements LocationListener
 		ui.setRotateGesturesEnabled(false);
 		PolylineOptions options = new PolylineOptions();
 		line = this.map.addPolyline(options);
-
-		xml = Xml.newSerializer();
 
 		lm = (LocationManager) this.act.getSystemService(Context.LOCATION_SERVICE);
 		criteria = new Criteria();
@@ -125,51 +112,22 @@ public class Tracker implements LocationListener
 			return;
 		}
 		tracking = true;
-		distance = 0.0;
-		points = new ArrayList<>();
 		latLngs = new ArrayList<>();
-		try
-		{
-			xmlStream = act.openFileOutput("track.gpx", Context.MODE_PRIVATE);
-			xml.setOutput(xmlStream, "utf-8");
-			xml.startDocument("UTF-8", true);
-			xml.startTag("", "gpx");
-			xml.attribute("", "xmlns", "http://www.topografix.com/GPX/1/1");
-			xml.attribute("xmlns", "xsi", "http://www.w3.org/2001/XMLSchema-instance");
-			xml.attribute("xsi", "schemaLocation", "http://www.topografix.com/GPX/1/1 gpx.xsd");
-			xml.attribute("", "version", "1.1");
-			xml.attribute("", "creator", "Move Bot");
-			xml.startTag("", "trk");
-			xml.startTag("", "trkseg");
-		}
-		catch(IOException e)
-		{
-			throw new RuntimeException("IOException", e);
-		}
+		run = new Run();
 	}
 
 	/**
 	 * Stop tracking GPS coordinates to end a running session.
+	 * @return the finished running session.
 	 */
-	public synchronized void stopTracking()
+	public synchronized Run stopTracking()
 	{
 		if(!tracking)
 		{
-			return;
+			return null;
 		}
 		tracking = false;
-		try
-		{
-			xml.endTag("", "trkseg");
-			xml.endTag("", "trk");
-			xml.endTag("", "gpx");
-			xml.endDocument();
-			xmlStream.close();
-		}
-		catch(IOException e)
-		{
-			throw new RuntimeException("IOException", e);
-		}
+		return run;
 	}
 
 	/**
@@ -197,33 +155,9 @@ public class Tracker implements LocationListener
 		map.animateCamera(CameraUpdateFactory.newLatLngZoom(ll, 16));
 		if(tracking)
 		{
-			if(!points.isEmpty())
-			{
-				Location lastLoc = points.get(points.size() - 1);
-				distance += lastLoc.distanceTo(location);
-			}
-			points.add(location);
 			latLngs.add(ll);
 			line.setPoints(latLngs);
-			try
-			{
-				xml.startTag("", "trkpt");
-				xml.attribute("", "lat", String.valueOf(ll.latitude));
-				xml.attribute("", "lon", String.valueOf(ll.longitude));
-				xml.startTag("", "ele");
-				xml.text(String.valueOf(location.getAltitude()));
-				xml.endTag("", "ele");
-				xml.startTag("", "time");
-				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-DD'T'kk:mm:ss");
-				xml.text(sdf.format(new Date(location.getTime())));
-				xml.endTag("", "time");
-				xml.endTag("", "trkpt");
-			}
-			catch(IOException e)
-			{
-				throw new RuntimeException("IOException", e);
-			}
-			act.updateStats(location.getSpeed(), distance);
+			act.updateStats(location.getSpeed(), run.newPoint(location));
 		}
 		act.updateGps(location.getAccuracy());
 	}
