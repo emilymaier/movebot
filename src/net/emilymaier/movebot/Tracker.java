@@ -41,7 +41,6 @@ import android.os.Bundle;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -67,16 +66,13 @@ public class Tracker implements LocationListener
 
 	public boolean locating = false;
 	public boolean tracking = false;
+	public boolean paused = false;
 
 	public Tracker(MoveBotActivity act, GoogleMap map)
 	{
 		this.act = act;
 		this.map = map;
-		UiSettings ui = this.map.getUiSettings();
-		ui.setZoomGesturesEnabled(false);
-		ui.setScrollGesturesEnabled(false);
-		ui.setTiltGesturesEnabled(false);
-		ui.setRotateGesturesEnabled(false);
+		this.map.setMyLocationEnabled(true);
 		PolylineOptions options = new PolylineOptions();
 		line = this.map.addPolyline(options);
 
@@ -112,8 +108,26 @@ public class Tracker implements LocationListener
 			return;
 		}
 		tracking = true;
+		paused = false;
 		latLngs = new ArrayList<>();
 		run = new Run();
+	}
+
+	/**
+	 * Pause the running session.
+	 */
+	public synchronized void pauseTracking()
+	{
+		paused = true;
+	}
+
+	/**
+	 * Resume the running session.
+	 */
+	public synchronized void resumeTracking()
+	{
+		paused = false;
+		run.newTrack();
 	}
 
 	/**
@@ -151,10 +165,9 @@ public class Tracker implements LocationListener
 	@Override
 	public synchronized void onLocationChanged(Location location)
 	{
-		LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
-		map.animateCamera(CameraUpdateFactory.newLatLngZoom(ll, 16));
-		if(tracking)
+		if(tracking && !paused)
 		{
+			LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
 			latLngs.add(ll);
 			line.setPoints(latLngs);
 			act.updateStats(location.getSpeed(), run.newPoint(location));

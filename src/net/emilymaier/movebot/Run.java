@@ -39,6 +39,7 @@ import android.util.Xml;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -62,7 +63,7 @@ public class Run implements Serializable
 	private static final long serialVersionUID = 0L;
 	private long startTime;
 	private long endTime;
-	private ArrayList<LocationData> points;
+	private ArrayList<ArrayList<LocationData>> points;
 	private double distance = 0.0;
 
 	public long getStartTime()
@@ -75,15 +76,30 @@ public class Run implements Serializable
 		return distance;
 	}
 
+	public long getTotalTime()
+	{
+		long totalTime = 0;
+		for(ArrayList<LocationData> currentPoints : points)
+		{
+			if(currentPoints.size() == 0)
+			{
+				continue;
+			}
+			totalTime += currentPoints.get(currentPoints.size() - 1).time - currentPoints.get(0).time;
+		}
+		return totalTime;
+	}
+
 	public double getAverageSpeed()
 	{
-		return distance * 1000 / (endTime - startTime);
+		return distance * 1000 / getTotalTime();
 	}
 
 	public Run()
 	{
 		startTime = System.currentTimeMillis();
 		points = new ArrayList<>();
+		newTrack();
 	}
 
 	/**
@@ -93,9 +109,10 @@ public class Run implements Serializable
 	 */
 	public double newPoint(Location location)
 	{
-		if(!points.isEmpty())
+		ArrayList<LocationData> currentPoints = points.get(points.size() - 1);
+		if(!currentPoints.isEmpty())
 		{
-			LocationData lastData = points.get(points.size() - 1);
+			LocationData lastData = currentPoints.get(currentPoints.size() - 1);
 			Location lastLoc = new Location("");
 			lastLoc.setLatitude(lastData.latitude);
 			lastLoc.setLongitude(lastData.longitude);
@@ -107,19 +124,30 @@ public class Run implements Serializable
 		curData.longitude = location.getLongitude();
 		curData.altitude = location.getAltitude();
 		curData.time = location.getTime();
-		points.add(curData);
+		currentPoints.add(curData);
 		endTime = curData.time;
 		return distance;
 	}
 
 	/**
+	 * Starts a new GPS track after the running session has been paused.
+	 */
+	public void newTrack()
+	{
+		points.add(new ArrayList<LocationData>());
+	}
+
+	/**
 	 * Generates a .gpx representing this running session in track.gpx in
 	 * the internal storage.
+	 * @param context the application context
+	 * @return the filename of the .gpx
 	 */
-	public void generateGpx(Context context) throws IOException
+	public String generateGpx(Context context) throws IOException
 	{
+		String filename = DateFormat.getDateTimeInstance().format(new Date(startTime));
 		XmlSerializer xml = Xml.newSerializer();
-		FileOutputStream xmlStream = context.openFileOutput("track.gpx", Context.MODE_PRIVATE);
+		FileOutputStream xmlStream = context.openFileOutput(filename, Context.MODE_PRIVATE);
 		xml.setOutput(xmlStream, "utf-8");
 		xml.startDocument("UTF-8", true);
 		xml.startTag("", "gpx");
@@ -129,25 +157,29 @@ public class Run implements Serializable
 		xml.attribute("", "version", "1.1");
 		xml.attribute("", "creator", "Move Bot");
 		xml.startTag("", "trk");
-		xml.startTag("", "trkseg");
-		for(LocationData location : points)
+		for(ArrayList<LocationData> currentPoints : points)
 		{
-			xml.startTag("", "trkpt");
-			xml.attribute("", "lat", String.valueOf(location.latitude));
-			xml.attribute("", "lon", String.valueOf(location.longitude));
-			xml.startTag("", "ele");
-			xml.text(String.valueOf(location.altitude));
-			xml.endTag("", "ele");
-			xml.startTag("", "time");
-			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-DD'T'kk:mm:ss");
-			xml.text(sdf.format(new Date(location.time)));
-			xml.endTag("", "time");
-			xml.endTag("", "trkpt");
+			xml.startTag("", "trkseg");
+			for(LocationData location : currentPoints)
+			{
+				xml.startTag("", "trkpt");
+				xml.attribute("", "lat", String.valueOf(location.latitude));
+				xml.attribute("", "lon", String.valueOf(location.longitude));
+				xml.startTag("", "ele");
+				xml.text(String.valueOf(location.altitude));
+				xml.endTag("", "ele");
+				xml.startTag("", "time");
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-DD'T'kk:mm:ss");
+				xml.text(sdf.format(new Date(location.time)));
+				xml.endTag("", "time");
+				xml.endTag("", "trkpt");
+			}
+			xml.endTag("", "trkseg");
 		}
-		xml.endTag("", "trkseg");
 		xml.endTag("", "trk");
 		xml.endTag("", "gpx");
 		xml.endDocument();
 		xmlStream.close();
+		return filename;
 	}
 }
