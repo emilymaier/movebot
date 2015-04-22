@@ -145,7 +145,7 @@ public class Run implements Serializable
 	 */
 	public String generateGpx(Context context) throws IOException
 	{
-		String filename = DateFormat.getDateTimeInstance().format(new Date(startTime));
+		String filename = DateFormat.getDateTimeInstance().format(new Date(startTime)) + ".gpx";
 		XmlSerializer xml = Xml.newSerializer();
 		FileOutputStream xmlStream = context.openFileOutput(filename, Context.MODE_PRIVATE);
 		xml.setOutput(xmlStream, "utf-8");
@@ -169,7 +169,7 @@ public class Run implements Serializable
 				xml.text(String.valueOf(location.altitude));
 				xml.endTag("", "ele");
 				xml.startTag("", "time");
-				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-DD'T'kk:mm:ss");
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'kk:mm:ss");
 				xml.text(sdf.format(new Date(location.time)));
 				xml.endTag("", "time");
 				xml.endTag("", "trkpt");
