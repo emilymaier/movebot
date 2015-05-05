@@ -43,7 +43,11 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -55,11 +59,13 @@ import android.widget.TextView;
 
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.FileProvider;
 import android.support.v4.view.ViewPager;
+
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -82,7 +88,7 @@ import java.util.TimerTask;
 /**
  * The only activity for MoveBot. Runs the entire app.
  */
-public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallback
+public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCallback
 {
 	/**
 	 * FragmentPagerAdapter for the activity pages. Returns the fragments in
@@ -193,10 +199,16 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 			runItemTime.setText(Units.duration(currentRun.getTotalTime()));
 			TextView runItemDistance = (TextView) rowView.findViewById(R.id.runItemDistance);
 			runItemDistance.setText(Units.distance(currentRun.getDistance()));
+			TextView runItemDistanceUnits = (TextView) rowView.findViewById(R.id.runItemDistanceUnits);
+			runItemDistanceUnits.setText(" " + Units.distanceUnits());
 			TextView runItemSpeed = (TextView) rowView.findViewById(R.id.runItemSpeed);
 			runItemSpeed.setText(Units.speed(currentRun.getAverageSpeed()));
+			TextView runItemSpeedUnits = (TextView) rowView.findViewById(R.id.runItemSpeedUnits);
+			runItemSpeedUnits.setText(" " + Units.speedUnits());
 			TextView runItemPace = (TextView) rowView.findViewById(R.id.runItemPace);
 			runItemPace.setText(Units.pace(currentRun.getAverageSpeed()));
+			TextView runItemPaceUnits = (TextView) rowView.findViewById(R.id.runItemPaceUnits);
+			runItemPaceUnits.setText(" " + Units.paceUnits());
 			Button runItemShare = (Button) rowView.findViewById(R.id.runItemShare);
 			runItemShare.setTag(position);
 			runItemShare.setOnClickListener(new View.OnClickListener() {
@@ -261,19 +273,19 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 			speedLabel.setTypeface(font);
 			speedText = (TextView) rootView.findViewById(R.id.speedText);
 			speedText.setTypeface(font);
-			TextView speedUnits = (TextView) rootView.findViewById(R.id.speedUnits);
+			speedUnits = (TextView) rootView.findViewById(R.id.speedUnits);
 			speedUnits.setTypeface(font);
 			TextView distanceLabel = (TextView) rootView.findViewById(R.id.distanceLabel);
 			distanceLabel.setTypeface(font);
 			distanceText = (TextView) rootView.findViewById(R.id.distanceText);
 			distanceText.setTypeface(font);
-			TextView distanceUnits = (TextView) rootView.findViewById(R.id.distanceUnits);
+			distanceUnits = (TextView) rootView.findViewById(R.id.distanceUnits);
 			distanceUnits.setTypeface(font);
 			TextView paceLabel = (TextView) rootView.findViewById(R.id.paceLabel);
 			paceLabel.setTypeface(font);
 			paceText = (TextView) rootView.findViewById(R.id.paceText);
 			paceText.setTypeface(font);
-			TextView paceUnits = (TextView) rootView.findViewById(R.id.paceUnits);
+			paceUnits = (TextView) rootView.findViewById(R.id.paceUnits);
 			paceUnits.setTypeface(font);
 			startStop = (Button) rootView.findViewById(R.id.startStop);
 			startStop.setTypeface(font);
@@ -282,6 +294,7 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 			gpsInfo = (TextView) rootView.findViewById(R.id.gpsInfo);
 			gpsInfo.setTypeface(font);
 			shareButton = (Button) rootView.findViewById(R.id.shareButton);
+			updateUnits();
 			return rootView;
 		}
 	}
@@ -402,8 +415,11 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	private ListView runsList;
 	private Chronometer timeText;
 	private TextView speedText;
+	private TextView speedUnits;
 	private TextView distanceText;
+	private TextView distanceUnits;
 	private TextView paceText;
+	private TextView paceUnits;
 	private Button startStop;
 	private Button pauseResume;
 	private TextView gpsInfo;
@@ -420,6 +436,11 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+
+		PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+		Units.initialize(this);
+		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+		setSupportActionBar(toolbar);
 
 		runs = new ArrayList<>();
 		try
@@ -453,6 +474,37 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		gpsInfoTimer = new Timer();
 		gpsInfoTimer.schedule(new GpsInfoTask(), 2 * 1000);
 		mapFragment.getMapAsync(this);
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.main, menu);
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		switch(item.getItemId())
+		{
+			case R.id.action_settings:
+				Intent intent = new Intent(this, SettingsActivity.class);
+				startActivityForResult(intent, 0);
+				return true;
+			default:
+				return super.onOptionsItemSelected(item);
+		}
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		if(requestCode == 0)
+		{
+			updateUnits();
+		}
 	}
 
 	@Override
@@ -494,6 +546,17 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 		tracker.startLocating();
 		startStop.setOnClickListener(new StartStopClick());
 		pauseResume.setOnClickListener(new PauseResumeClick());
+	}
+
+	public void updateUnits()
+	{
+		if(runsList != null)
+		{
+			runsList.invalidateViews();
+		}
+		speedUnits.setText(Units.speedUnits());
+		distanceUnits.setText(Units.distanceUnits());
+		paceUnits.setText(Units.paceUnits());
 	}
 
 	/**

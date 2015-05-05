@@ -32,8 +32,7 @@
 		android:layout_height="wrap_content"
 		android:layout_below="@+id/runItemTime"
 		android:layout_toRightOf="@+id/runItemDistance"
-		android:layout_marginRight="6dip"
-		android:text=" miles" />
+		android:layout_marginRight="6dip"/>
 	<TextView
 		android:id="@+id/runItemSpeed"
 		android:layout_width="wrap_content"
@@ -46,8 +45,7 @@
 		android:layout_height="wrap_content"
 		android:layout_below="@+id/runItemTime"
 		android:layout_toRightOf="@+id/runItemSpeed"
-		android:layout_marginRight="6dip"
-		android:text=" mph" />
+		android:layout_marginRight="6dip"/>
 	<TextView
 		android:id="@+id/runItemPace"
 		android:layout_width="wrap_content"
@@ -59,8 +57,7 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_below="@+id/runItemTime"
-		android:layout_toRightOf="@+id/runItemPace"
-		android:text=" min/mi" />
+		android:layout_toRightOf="@+id/runItemPace"/>
 	<Button
 		android:id="@+id/runItemShare"
 		android:layout_width="wrap_content"

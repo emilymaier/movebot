@@ -37,7 +37,6 @@
 		<TextView
 			android:id="@+id/speedUnits"
 			style="@style/ControlText"
-			android:text="mph"
 			android:textSize="16dip" />
 	</LinearLayout>
 	<LinearLayout
@@ -62,7 +61,6 @@
 		<TextView
 			android:id="@+id/distanceUnits"
 			style="@style/ControlText"
-			android:text="miles"
 			android:textSize="16dip" />
 	</LinearLayout>
 	<LinearLayout
@@ -85,7 +83,6 @@
 		<TextView
 			android:id="@+id/paceUnits"
 			style="@style/ControlText"
-			android:text="min/mi"
 			android:textSize="16dip" />
 	</LinearLayout>
 	<LinearLayout

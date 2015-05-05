@@ -32,6 +32,10 @@
 
 package net.emilymaier.movebot;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
+
 import java.text.DecimalFormat;
 
 /**
@@ -39,6 +43,17 @@ import java.text.DecimalFormat;
  */
 public class Units
 {
+	private static SharedPreferences prefs;
+
+	/**
+	 * Initialize the preferences to grab the units.
+	 * @param context the application context
+	 */
+	public static void initialize(Context context)
+	{
+		prefs = PreferenceManager.getDefaultSharedPreferences(context);
+	}
+
 	/**
 	 * Duration conversion.
 	 * @param millis the elapsed time, in milliseconds
@@ -69,7 +84,33 @@ public class Units
 	public static String distance(double meters)
 	{
 		DecimalFormat df = new DecimalFormat("##0.00");
-		return df.format(meters * 0.000621371);
+		String units = prefs.getString("units", "");
+		if(units.equals("us"))
+		{
+			return df.format(meters * 0.000621371);
+		}
+		if(units.equals("metric"))
+		{
+			return df.format(meters * 0.001);
+		}
+		throw new RuntimeException("invalid units");
+	}
+
+	/**
+	 * Distance units.
+	 */
+	public static String distanceUnits()
+	{
+		String units = prefs.getString("units", "");
+		if(units.equals("us"))
+		{
+			return "miles";
+		}
+		if(units.equals("metric"))
+		{
+			return "kilometers";
+		}
+		throw new RuntimeException("invalid units");
 	}
 
 	/**
@@ -80,7 +121,33 @@ public class Units
 	public static String speed(double ms)
 	{
 		DecimalFormat df = new DecimalFormat("#0.0");
-		return df.format(ms * 2.23694);
+		String units = prefs.getString("units", "");
+		if(units.equals("us"))
+		{
+			return df.format(ms * 2.23694);
+		}
+		if(units.equals("metric"))
+		{
+			return df.format(ms * 3.6);
+		}
+		throw new RuntimeException("invalid units");
+	}
+
+	/**
+	 * Speed units.
+	 */
+	public static String speedUnits()
+	{
+		String units = prefs.getString("units", "");
+		if(units.equals("us"))
+		{
+			return "mph";
+		}
+		if(units.equals("metric"))
+		{
+			return "kph";
+		}
+		throw new RuntimeException("invalid units");
 	}
 
 	/**
@@ -94,6 +161,32 @@ public class Units
 		{
 			return "--:--";
 		}
-		return duration((long) (60 * 60 * 1000/ (ms * 2.23694)));
+		String units = prefs.getString("units", "");
+		if(units.equals("us"))
+		{
+			return duration((long) (60 * 60 * 1000/ (ms * 2.23694)));
+		}
+		if(units.equals("metric"))
+		{
+			return duration((long) (60 * 60 * 1000/ (ms * 3.6)));
+		}
+		throw new RuntimeException("invalid units");
+	}
+
+	/**
+	 * Pace units.
+	 */
+	public static String paceUnits()
+	{
+		String units = prefs.getString("units", "");
+		if(units.equals("us"))
+		{
+			return "min/mi";
+		}
+		if(units.equals("metric"))
+		{
+			return "min/km";
+		}
+		throw new RuntimeException("invalid units");
 	}
 }
