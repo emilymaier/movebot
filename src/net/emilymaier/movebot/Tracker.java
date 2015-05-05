@@ -170,7 +170,13 @@ public class Tracker implements LocationListener
 			LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
 			latLngs.add(ll);
 			line.setPoints(latLngs);
-			act.updateStats(location.getSpeed(), run.newPoint(location));
+			double distance = run.newPoint(location);
+			double speed = 0.0;
+			if(location.getSpeed() > 0)
+			{
+				speed = (location.getSpeed() + run.getSpeed()) / 2;
+			}
+			act.updateStats(speed, distance);
 		}
 		act.updateGps(location.getAccuracy());
 	}

@@ -65,6 +65,7 @@ public class Run implements Serializable
 	private long endTime;
 	private ArrayList<ArrayList<LocationData>> points;
 	private double distance = 0.0;
+	private transient double speed = 0.0;
 
 	public long getStartTime()
 	{
@@ -74,6 +75,11 @@ public class Run implements Serializable
 	public double getDistance()
 	{
 		return distance;
+	}
+
+	public double getSpeed()
+	{
+		return speed;
 	}
 
 	public long getTotalTime()
@@ -118,6 +124,7 @@ public class Run implements Serializable
 			lastLoc.setLongitude(lastData.longitude);
 			lastLoc.setAltitude(lastData.altitude);
 			distance += lastLoc.distanceTo(location);
+			speed = lastLoc.distanceTo(location) * 1000 / (location.getTime() - lastData.time);
 		}
 		LocationData curData = new LocationData();
 		curData.latitude = location.getLatitude();

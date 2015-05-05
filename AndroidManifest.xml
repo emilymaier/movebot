@@ -37,6 +37,9 @@
 				android:resource="@xml/filepaths" />
 		</provider>
 	</application>
+	<uses-feature
+		android:name="android.hardware.sensor.accelerometer"
+		android:required="true"/>
 	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.INTERNET" />
