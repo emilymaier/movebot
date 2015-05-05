@@ -73,7 +73,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.text.DateFormat;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -191,37 +190,13 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 			TextView runItemStart = (TextView) rowView.findViewById(R.id.runItemStart);
 			runItemStart.setText(DateFormat.getDateTimeInstance().format(new Date(currentRun.getStartTime())));
 			TextView runItemTime = (TextView) rowView.findViewById(R.id.runItemTime);
-			long totalTime = currentRun.getTotalTime() / 1000;
-			String timeString = "";
-			if(totalTime >= 60 * 60)
-			{
-				timeString = String.valueOf(totalTime / 60 / 60) + ":";
-				totalTime %= 60 * 60;
-			}
-			DecimalFormat df = new DecimalFormat("00:");
-			timeString += df.format(totalTime / 60);
-			totalTime %= 60;
-			df = new DecimalFormat("00");
-			timeString += df.format(totalTime);
-			runItemTime.setText(timeString);
+			runItemTime.setText(Units.duration(currentRun.getTotalTime()));
 			TextView runItemDistance = (TextView) rowView.findViewById(R.id.runItemDistance);
-			df = new DecimalFormat("##0.00");
-			runItemDistance.setText(df.format(currentRun.getDistance() * 0.000621371));
+			runItemDistance.setText(Units.distance(currentRun.getDistance()));
 			TextView runItemSpeed = (TextView) rowView.findViewById(R.id.runItemSpeed);
-			df = new DecimalFormat("#0.0");
-			double speed = currentRun.getAverageSpeed() * 2.23694;
-			runItemSpeed.setText(df.format(speed));
+			runItemSpeed.setText(Units.speed(currentRun.getAverageSpeed()));
 			TextView runItemPace = (TextView) rowView.findViewById(R.id.runItemPace);
-			if(speed == 0)
-			{
-				paceText.setText("--:--");
-			}
-			else
-			{
-				int minutePace = (int) (60 / speed);
-				int secondPace = ((int) (60 * 60 / speed)) % 60;
-				runItemPace.setText(String.valueOf(minutePace) + ":" + String.valueOf(secondPace));
-			}
+			runItemPace.setText(Units.pace(currentRun.getAverageSpeed()));
 			Button runItemShare = (Button) rowView.findViewById(R.id.runItemShare);
 			runItemShare.setTag(position);
 			runItemShare.setOnClickListener(new View.OnClickListener() {
@@ -529,20 +504,9 @@ public class MoveBotActivity extends FragmentActivity implements OnMapReadyCallb
 	 */
 	public void updateStats(double speed, double distance)
 	{
-		speed *= 2.23694;
-		DecimalFormat df = new DecimalFormat("#0.0");
-		speedText.setText(df.format(speed));
-		distance *= 0.000621371;
-		df = new DecimalFormat("##0.00");
-		distanceText.setText(df.format(distance));
-		if(speed == 0)
-		{
-			paceText.setText("--:--");
-			return;
-		}
-		int minutePace = (int) (60 / speed);
-		int secondPace = ((int) (60 * 60 / speed)) % 60;
-		paceText.setText(String.valueOf(minutePace) + ":" + String.valueOf(secondPace));
+		speedText.setText(Units.speed(speed));
+		distanceText.setText(Units.distance(distance));
+		paceText.setText(Units.pace(speed));
 	}
 
 	/**
