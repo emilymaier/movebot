@@ -489,9 +489,13 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	{
 		switch(item.getItemId())
 		{
+			case R.id.actionAbout:
+				Intent intent = new Intent(this, AboutActivity.class);
+				startActivity(intent);
+				return true;
 			case R.id.action_settings:
-				Intent intent = new Intent(this, SettingsActivity.class);
-				startActivityForResult(intent, 0);
+				Intent intent2 = new Intent(this, SettingsActivity.class);
+				startActivityForResult(intent2, 0);
 				return true;
 			default:
 				return super.onOptionsItemSelected(item);

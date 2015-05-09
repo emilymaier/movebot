@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Move Bot</string>
+    <string name="appVersion">1.1beta1</string>
     <string-array name="units_entries">
 	    <item>US</item>
 	    <item>Metric</item>

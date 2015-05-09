@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:padding="5dip">
+	<TextView
+		android:id="@+id/aboutName"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_alignParentTop="true"
+		android:layout_centerHorizontal="true"
+		android:text="@string/app_name"
+		android:textSize="24dip"/>
+	<ImageView
+		android:id="@+id/aboutIcon"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/aboutName"
+		android:layout_centerHorizontal="true"
+		android:paddingTop="20dip"
+		android:src="@drawable/ic_launcher"/>
+	<LinearLayout
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/aboutIcon"
+		android:layout_centerHorizontal="true"
+		android:paddingTop="20dip">
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Version: "/>
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/appVersion"/>
+	</LinearLayout>
+</RelativeLayout>
