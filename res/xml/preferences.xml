@@ -7,4 +7,8 @@
 		android:defaultValue="us"
 		android:entries="@array/units_entries"
 		android:entryValues="@array/units_values"/>
+	<CheckBoxPreference
+		android:key="developer"
+		android:title="Developer Mode"
+		android:defaultValue="false"/>
 </PreferenceScreen>

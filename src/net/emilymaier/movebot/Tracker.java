@@ -45,7 +45,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -64,15 +66,18 @@ public class Tracker implements LocationListener
 
 	private Run run;
 
+	private DeveloperFragment developerFragment;
+
 	public boolean locating = false;
 	public boolean tracking = false;
 	public boolean paused = false;
 
-	public Tracker(MoveBotActivity act, GoogleMap map)
+	public Tracker(MoveBotActivity act, GoogleMap map, DeveloperFragment developerFragment)
 	{
 		this.act = act;
 		this.map = map;
 		this.map.setMyLocationEnabled(true);
+		this.developerFragment = developerFragment;
 		PolylineOptions options = new PolylineOptions();
 		line = this.map.addPolyline(options);
 
@@ -165,6 +170,14 @@ public class Tracker implements LocationListener
 	@Override
 	public synchronized void onLocationChanged(Location location)
 	{
+		if(developerFragment.developerLatitude != null)
+		{
+			developerFragment.developerLatitude.setText(String.valueOf(location.getLatitude()));
+			developerFragment.developerLongitude.setText(String.valueOf(location.getLongitude()));
+			developerFragment.developerAltitude.setText(String.valueOf(location.getAltitude()));
+			developerFragment.developerSpeed.setText(String.valueOf(location.getSpeed()));
+			developerFragment.developerTime.setText(DateFormat.getDateTimeInstance().format(new Date(location.getTime())));
+		}
 		if(tracking && !paused)
 		{
 			LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());

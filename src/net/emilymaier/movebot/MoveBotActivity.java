@@ -60,8 +60,8 @@ import android.widget.TextView;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.FileProvider;
+import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 
 import android.support.v7.app.AppCompatActivity;
@@ -91,25 +91,41 @@ import java.util.TimerTask;
 public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCallback
 {
 	/**
-	 * FragmentPagerAdapter for the activity pages. Returns the fragments in
-	 * the main activity.
+	 * MainPagerAdapter for the activity pages. Returns the fragments in the
+	 * main activity.
 	 */
-	private class MainPagerAdapter extends FragmentPagerAdapter
+	private class MainPagerAdapter extends PagerAdapter
 	{
-		public MainPagerAdapter(FragmentManager fm)
-		{
-			super(fm);
-		}
+		private boolean developerMode = false;
 
 		@Override
 		public int getCount()
 		{
+			if(developerMode)
+			{
+				return 4;
+			}
 			return 3;
 		}
 
-		@Override
-		public Fragment getItem(int position)
+		private Fragment getItem(int position)
 		{
+			if(developerMode)
+			{
+				switch(position)
+				{
+					case 0:
+						return runsFragment;
+					case 1:
+						return developerFragment;
+					case 2:
+						return controlFragment;
+					case 3:
+						return mapFragment;
+					default:
+						return null;
+				}
+			}
 			switch(position)
 			{
 				case 0:
@@ -126,6 +142,22 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 		@Override
 		public CharSequence getPageTitle(int position)
 		{
+			if(developerMode)
+			{
+				switch(position)
+				{
+					case 0:
+						return "Runs";
+					case 1:
+						return "Developer";
+					case 2:
+						return "Control";
+					case 3:
+						return "Map";
+					default:
+						return null;
+				}
+			}
 			switch(position)
 			{
 				case 0:
@@ -137,6 +169,55 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 				default:
 					return null;
 			}
+		}
+
+		@Override
+		public int getItemPosition(Object object)
+		{
+			return POSITION_NONE;
+		}
+
+		@Override
+		public Object instantiateItem(ViewGroup container, int position)
+		{
+			Fragment fragment = getItem(position);
+			if(!fragment.isAdded())
+			{
+				getSupportFragmentManager()
+					.beginTransaction()
+					.add(container.getId(), fragment)
+					.commitAllowingStateLoss();
+			}
+			getSupportFragmentManager()
+				.beginTransaction()
+				.attach(fragment)
+				.commitAllowingStateLoss();
+			return fragment;
+		}
+
+		@Override
+		public void destroyItem(ViewGroup container, int position, Object object)
+		{
+			Fragment fragment = getItem(position);
+			if(fragment != null)
+			{
+				getSupportFragmentManager()
+					.beginTransaction()
+					.detach(fragment)
+					.commitAllowingStateLoss();
+			}
+		}
+
+		@Override
+		public boolean isViewFromObject(View view, Object object)
+		{
+			return ((Fragment) object).getView() == view;
+		}
+
+		public void setDeveloperMode(ViewPager pager, boolean developerMode)
+		{
+			this.developerMode = developerMode;
+			notifyDataSetChanged();
 		}
 	}
 
@@ -401,8 +482,9 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	}
 
 	private ViewPager pager;
-	private FragmentPagerAdapter adapter;
+	private MainPagerAdapter adapter;
 	private RunsFragment runsFragment;
+	private DeveloperFragment developerFragment;
 	private ControlFragment controlFragment;
 	private SupportMapFragment mapFragment;
 
@@ -465,12 +547,13 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 
 		font = Typeface.createFromAsset(getAssets(), "fonts/led_real.ttf");
 		pager = (ViewPager) findViewById(R.id.pager);
-		adapter = new MainPagerAdapter(getSupportFragmentManager());
+		adapter = new MainPagerAdapter();
 		runsFragment = new RunsFragment();
+		developerFragment = new DeveloperFragment();
 		controlFragment = new ControlFragment();
 		mapFragment = SupportMapFragment.newInstance();
 		pager.setAdapter(adapter);
-		pager.setCurrentItem(1);
+		updateDeveloperMode();
 		gpsInfoTimer = new Timer();
 		gpsInfoTimer.schedule(new GpsInfoTask(), 2 * 1000);
 		mapFragment.getMapAsync(this);
@@ -508,6 +591,7 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 		if(requestCode == 0)
 		{
 			updateUnits();
+			updateDeveloperMode();
 		}
 	}
 
@@ -546,13 +630,16 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	@Override
 	public void onMapReady(GoogleMap map)
 	{
-		tracker = new Tracker(this, map);
+		tracker = new Tracker(this, map, developerFragment);
 		tracker.startLocating();
 		startStop.setOnClickListener(new StartStopClick());
 		pauseResume.setOnClickListener(new PauseResumeClick());
 	}
 
-	public void updateUnits()
+	/**
+	 * Update the units being used in the app.
+	 */
+	private void updateUnits()
 	{
 		if(runsList != null)
 		{
@@ -561,6 +648,23 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 		speedUnits.setText(Units.speedUnits());
 		distanceUnits.setText(Units.distanceUnits());
 		paceUnits.setText(Units.paceUnits());
+	}
+
+	/**
+	 * Update the status of developer mode.
+	 */
+	private void updateDeveloperMode()
+	{
+		if(PreferenceManager.getDefaultSharedPreferences(this).getBoolean("developer", false))
+		{
+			adapter.setDeveloperMode(pager, true);
+			pager.setCurrentItem(2);
+		}
+		else
+		{
+			adapter.setDeveloperMode(pager, false);
+			pager.setCurrentItem(1);
+		}
 	}
 
 	/**
