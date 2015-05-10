@@ -43,6 +43,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.TimeZone;
 
 import org.xmlpull.v1.XmlSerializer;
 
@@ -176,7 +177,8 @@ public class Run implements Serializable
 				xml.text(String.valueOf(location.altitude));
 				xml.endTag("", "ele");
 				xml.startTag("", "time");
-				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'kk:mm:ss");
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'kk:mm:ss'Z'");
+				sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 				xml.text(sdf.format(new Date(location.time)));
 				xml.endTag("", "time");
 				xml.endTag("", "trkpt");
