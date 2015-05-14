@@ -60,8 +60,8 @@ import android.widget.TextView;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.FileProvider;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 
 import android.support.v7.app.AppCompatActivity;
@@ -94,9 +94,14 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	 * MainPagerAdapter for the activity pages. Returns the fragments in the
 	 * main activity.
 	 */
-	private class MainPagerAdapter extends PagerAdapter
+	private class MainPagerAdapter extends FragmentPagerAdapter
 	{
 		private boolean developerMode = false;
+
+		public MainPagerAdapter(FragmentManager fm)
+		{
+			super(fm);
+		}
 
 		@Override
 		public int getCount()
@@ -108,31 +113,17 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 			return 3;
 		}
 
-		private Fragment getItem(int position)
+		public Fragment getItem(int position)
 		{
-			if(developerMode)
-			{
-				switch(position)
-				{
-					case 0:
-						return runsFragment;
-					case 1:
-						return developerFragment;
-					case 2:
-						return controlFragment;
-					case 3:
-						return mapFragment;
-					default:
-						return null;
-				}
-			}
 			switch(position)
 			{
 				case 0:
 					return runsFragment;
 				case 1:
-					return controlFragment;
+					return developerFragment;
 				case 2:
+					return controlFragment;
+				case 3:
 					return mapFragment;
 				default:
 					return null;
@@ -180,32 +171,19 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 		@Override
 		public Object instantiateItem(ViewGroup container, int position)
 		{
-			Fragment fragment = getItem(position);
-			if(!fragment.isAdded())
+			if(!developerMode)
 			{
-				getSupportFragmentManager()
-					.beginTransaction()
-					.add(container.getId(), fragment)
-					.commitAllowingStateLoss();
+				switch(position)
+				{
+					case 0:
+						return super.instantiateItem(container, 0);
+					case 1:
+						return super.instantiateItem(container, 2);
+					case 2:
+						return super.instantiateItem(container, 3);
+				}
 			}
-			getSupportFragmentManager()
-				.beginTransaction()
-				.attach(fragment)
-				.commitAllowingStateLoss();
-			return fragment;
-		}
-
-		@Override
-		public void destroyItem(ViewGroup container, int position, Object object)
-		{
-			Fragment fragment = getItem(position);
-			if(fragment != null)
-			{
-				getSupportFragmentManager()
-					.beginTransaction()
-					.detach(fragment)
-					.commitAllowingStateLoss();
-			}
+			return super.instantiateItem(container, position);
 		}
 
 		@Override
@@ -547,7 +525,7 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 
 		font = Typeface.createFromAsset(getAssets(), "fonts/led_real.ttf");
 		pager = (ViewPager) findViewById(R.id.pager);
-		adapter = new MainPagerAdapter();
+		adapter = new MainPagerAdapter(getSupportFragmentManager());
 		runsFragment = new RunsFragment();
 		developerFragment = new DeveloperFragment();
 		controlFragment = new ControlFragment();
