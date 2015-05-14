@@ -3,7 +3,7 @@
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	package="net.emilymaier.movebot"
 	android:versionCode="5"
-	android:versionName="@string/appVersion">
+	android:versionName="1.1">
 	<application
 		android:label="@string/app_name"
 		android:icon="@drawable/ic_launcher"

@@ -21,6 +21,7 @@
 		android:paddingTop="20dip"
 		android:src="@drawable/ic_launcher"/>
 	<LinearLayout
+		android:id="@+id/aboutVersionLayout"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_below="@+id/aboutIcon"
@@ -31,8 +32,22 @@
 			android:layout_height="wrap_content"
 			android:text="Version: "/>
 		<TextView
+			android:id="@+id/aboutVersion"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"/>
+	</LinearLayout>
+	<LinearLayout
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_below="@+id/aboutVersionLayout"
+		android:layout_centerHorizontal="true">
+		<TextView
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:text="@string/appVersion"/>
+			android:text="Version Code: "/>
+		<TextView
+			android:id="@+id/aboutVersionCode"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"/>
 	</LinearLayout>
 </RelativeLayout>

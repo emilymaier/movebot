@@ -33,7 +33,9 @@
 package net.emilymaier.movebot;
 
 import android.app.Activity;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
+import android.widget.TextView;
 
 /**
  * Displays the about screen.
@@ -45,5 +47,15 @@ public class AboutActivity extends Activity
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.about);
+		try
+		{
+			TextView aboutVersion = (TextView) findViewById(R.id.aboutVersion);
+			aboutVersion.setText(getPackageManager().getPackageInfo(getPackageName(), 0).versionName);
+			TextView aboutVersionCode = (TextView) findViewById(R.id.aboutVersionCode);
+			aboutVersionCode.setText(String.valueOf(getPackageManager().getPackageInfo(getPackageName(), 0).versionCode));
+		}
+		catch(NameNotFoundException e)
+		{
+		}
 	}
 }
