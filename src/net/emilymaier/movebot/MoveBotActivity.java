@@ -109,9 +109,9 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 		{
 			if(developerMode)
 			{
-				return 4;
+				return 5;
 			}
-			return 3;
+			return 4;
 		}
 
 		public Fragment getItem(int position)
@@ -121,10 +121,12 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 				case 0:
 					return runsFragment;
 				case 1:
-					return developerFragment;
+					return heartFragment;
 				case 2:
-					return controlFragment;
+					return developerFragment;
 				case 3:
+					return controlFragment;
+				case 4:
 					return mapFragment;
 				default:
 					return null;
@@ -141,10 +143,12 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 					case 0:
 						return "Runs";
 					case 1:
-						return "Developer";
+						return "HRM";
 					case 2:
-						return "Control";
+						return "Developer";
 					case 3:
+						return "Control";
+					case 4:
 						return "Map";
 					default:
 						return null;
@@ -155,8 +159,10 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 				case 0:
 					return "Runs";
 				case 1:
-					return "Control";
+					return "HRM";
 				case 2:
+					return "Control";
+				case 3:
 					return "Map";
 				default:
 					return null;
@@ -179,9 +185,11 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 					case 0:
 						return super.instantiateItem(container, 0);
 					case 1:
-						return super.instantiateItem(container, 2);
+						return super.instantiateItem(container, 1);
 					case 2:
 						return super.instantiateItem(container, 3);
+					case 3:
+						return super.instantiateItem(container, 4);
 				}
 			}
 			return super.instantiateItem(container, position);
@@ -469,6 +477,7 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	private ViewPager pager;
 	private MainPagerAdapter adapter;
 	private RunsFragment runsFragment;
+	private HeartFragment heartFragment;
 	private DeveloperFragment developerFragment;
 	private ControlFragment controlFragment;
 	private SupportMapFragment mapFragment;
@@ -497,9 +506,6 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	private double lastGpsAccuracy = 10000.0;
 	private Timer gpsInfoTimer;
 	private long chronoStopTime = 0;
-
-	private BluetoothAdapter bluetoothAdapter;
-	private HeartMonitor heartMonitor;
 
 	@Override
 	@SuppressWarnings({"deprecation", "unchecked"})
@@ -538,6 +544,7 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 		pager = (ViewPager) findViewById(R.id.pager);
 		adapter = new MainPagerAdapter(getSupportFragmentManager());
 		runsFragment = new RunsFragment();
+		heartFragment = new HeartFragment(this);
 		developerFragment = new DeveloperFragment();
 		controlFragment = new ControlFragment();
 		mapFragment = SupportMapFragment.newInstance();
@@ -547,17 +554,13 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 		gpsInfoTimer.schedule(new GpsInfoTask(), 2 * 1000);
 		mapFragment.getMapAsync(this);
 
-		bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		if(bluetoothAdapter != null)
 		{
 			if(!bluetoothAdapter.isEnabled())
 			{
 				Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 				startActivityForResult(intent, 1);
-			}
-			else
-			{
-				initBluetooth();
 			}
 		}
 	}
@@ -596,17 +599,12 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 			updateUnits();
 			updateDeveloperMode();
 		}
-		if(requestCode == 1 && resultCode == RESULT_OK)
-		{
-			initBluetooth();
-		}
 	}
 
 	@Override
 	protected void onStop()
 	{
 		super.onStop();
-		heartMonitor.stop();
 		synchronized(tracker)
 		{
 			if(!tracker.tracking)
@@ -633,7 +631,6 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	{
 		super.onRestart();
 		tracker.startLocating();
-		heartMonitor.start();
 	}
 
 	@Override
@@ -667,12 +664,12 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 		if(PreferenceManager.getDefaultSharedPreferences(this).getBoolean("developer", false))
 		{
 			adapter.setDeveloperMode(pager, true);
-			pager.setCurrentItem(2);
+			pager.setCurrentItem(3);
 		}
 		else
 		{
 			adapter.setDeveloperMode(pager, false);
-			pager.setCurrentItem(1);
+			pager.setCurrentItem(2);
 		}
 	}
 
@@ -740,14 +737,5 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	public void shareButtonClick(View view)
 	{
 		shareGpx(runs.get(0));
-	}
-
-	/**
-	 * Initialize the heart rate monitor.
-	 */
-	private void initBluetooth()
-	{
-		heartMonitor = new HeartMonitor(this, bluetoothAdapter);
-		heartMonitor.start();
 	}
 }
