@@ -35,6 +35,7 @@ package net.emilymaier.movebot;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -346,6 +347,12 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 			paceText.setTypeface(font);
 			paceUnits = (TextView) rootView.findViewById(R.id.paceUnits);
 			paceUnits.setTypeface(font);
+			TextView hrLabel = (TextView) rootView.findViewById(R.id.hrLabel);
+			hrLabel.setTypeface(font);
+			hrText = (TextView) rootView.findViewById(R.id.hrText);
+			hrText.setTypeface(font);
+			TextView hrUnits = (TextView) rootView.findViewById(R.id.hrUnits);
+			hrUnits.setTypeface(font);
 			startStop = (Button) rootView.findViewById(R.id.startStop);
 			startStop.setTypeface(font);
 			pauseResume = (Button) rootView.findViewById(R.id.pauseResume);
@@ -480,6 +487,7 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	private TextView distanceUnits;
 	private TextView paceText;
 	private TextView paceUnits;
+	private TextView hrText;
 	private Button startStop;
 	private Button pauseResume;
 	private TextView gpsInfo;
@@ -489,6 +497,9 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	private double lastGpsAccuracy = 10000.0;
 	private Timer gpsInfoTimer;
 	private long chronoStopTime = 0;
+
+	private BluetoothAdapter bluetoothAdapter;
+	private HeartMonitor heartMonitor;
 
 	@Override
 	@SuppressWarnings({"deprecation", "unchecked"})
@@ -535,6 +546,20 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 		gpsInfoTimer = new Timer();
 		gpsInfoTimer.schedule(new GpsInfoTask(), 2 * 1000);
 		mapFragment.getMapAsync(this);
+
+		bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		if(bluetoothAdapter != null)
+		{
+			if(!bluetoothAdapter.isEnabled())
+			{
+				Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+				startActivityForResult(intent, 1);
+			}
+			else
+			{
+				initBluetooth();
+			}
+		}
 	}
 
 	@Override
@@ -571,12 +596,17 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 			updateUnits();
 			updateDeveloperMode();
 		}
+		if(requestCode == 1 && resultCode == RESULT_OK)
+		{
+			initBluetooth();
+		}
 	}
 
 	@Override
 	protected void onStop()
 	{
 		super.onStop();
+		heartMonitor.stop();
 		synchronized(tracker)
 		{
 			if(!tracker.tracking)
@@ -603,6 +633,7 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	{
 		super.onRestart();
 		tracker.startLocating();
+		heartMonitor.start();
 	}
 
 	@Override
@@ -669,6 +700,15 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	}
 
 	/**
+	 * Called by the HeartMonitor to update the heart rate.
+	 * @param heartRate the current heart rate
+	 */
+	public void updateHeart(int heartRate)
+	{
+		hrText.setText(String.valueOf(heartRate));
+	}
+
+	/**
 	 * Generate a run's .gpx file and share it.
 	 * @param run the run session to generate the .gpx from
 	 */
@@ -700,5 +740,14 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	public void shareButtonClick(View view)
 	{
 		shareGpx(runs.get(0));
+	}
+
+	/**
+	 * Initialize the heart rate monitor.
+	 */
+	private void initBluetooth()
+	{
+		heartMonitor = new HeartMonitor(this, bluetoothAdapter);
+		heartMonitor.start();
 	}
 }
