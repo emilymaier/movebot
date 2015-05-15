@@ -44,6 +44,7 @@ import android.bluetooth.BluetoothProfile;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -148,6 +149,11 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 
 	private HeartThread heartThread;
 
+	public HeartFragment()
+	{
+		super();
+	}
+
 	public HeartFragment(MoveBotActivity act)
 	{
 		this.act = act;
@@ -166,6 +172,7 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id)
 			{
+				Log.d("HeartFragment", "Selecting device");
 				if(heartThread != null)
 				{
 					heartThread.running = false;
@@ -184,6 +191,7 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 	@SuppressWarnings("deprecation")
 	public void onClick(View view)
 	{
+		Log.d("HeartFragment", "Scan button clicked");
 		final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		if(bluetoothAdapter == null)
 		{
@@ -200,6 +208,7 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 			new NoLeDialogFragment().show(act.getSupportFragmentManager(), "le");
 			return;
 		}
+		Log.d("HeartFragment", "Starting scan");
 		heartScan.setClickable(false);
 		heartScan.setText("Scanning...");
 		heartDevices.clear();
@@ -210,6 +219,7 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 			@Override
 			public void run()
 			{
+				Log.d("HeartFragment", "Stopping scan");
 				bluetoothAdapter.stopLeScan(t);
 				heartScan.setText("Scan");
 				heartScan.setClickable(true);
@@ -221,12 +231,14 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 	@SuppressWarnings("deprecation")
 	public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord)
 	{
+		Log.d("HeartFragment", "Bluetooth LE device found");
 		BluetoothGatt bluetoothGatt = device.connectGatt(act, false, new BluetoothGattCallback() {
 			@Override
 			public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState)
 			{
 				if(newState == BluetoothProfile.STATE_CONNECTED)
 				{
+					Log.d("HeartFragment", "Connected to LE device");
 					gatt.discoverServices();
 				}
 			}
@@ -247,6 +259,7 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 					}
 					if(characteristic != null)
 					{
+						Log.d("HeartFragment", "Found device with HRM characteristic");
 						HeartDevice device = new HeartDevice();
 						device.bluetoothGatt = gatt;
 						device.characteristic = characteristic;
@@ -255,11 +268,13 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 					}
 					else
 					{
+						Log.d("HeartFragment", "Device does not have HRM characteristic");
 						gatt.disconnect();
 					}
 				}
 				else
 				{
+					Log.w("HeartFragment", "Failed to discover device services");
 					gatt.disconnect();
 				}
 			}

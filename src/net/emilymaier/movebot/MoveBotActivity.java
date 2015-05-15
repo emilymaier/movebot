@@ -213,6 +213,11 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	 */
 	private class RunsFragment extends Fragment
 	{
+		public RunsFragment()
+		{
+			super();
+		}
+
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 		{
@@ -329,6 +334,11 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	 */
 	private class ControlFragment extends Fragment
 	{
+		public ControlFragment()
+		{
+			super();
+		}
+
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 		{
@@ -400,7 +410,10 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 				{
 					timeText.stop();
 					runs.add(0, tracker.stopTracking());
-					runsListAdapter.notifyDataSetChanged();
+					if(runsListAdapter != null)
+					{
+						runsListAdapter.notifyDataSetChanged();
+					}
 					startStop.setText("Start");
 					startStop.setTextColor(res.getColor(R.color.green));
 					pauseResume.setVisibility(View.GONE);

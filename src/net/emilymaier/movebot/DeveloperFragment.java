@@ -51,6 +51,11 @@ public class DeveloperFragment extends Fragment
 	public TextView developerSpeed;
 	public TextView developerTime;
 
+	public DeveloperFragment()
+	{
+		super();
+	}
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 	{
