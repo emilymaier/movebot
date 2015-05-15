@@ -264,7 +264,13 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 						device.bluetoothGatt = gatt;
 						device.characteristic = characteristic;
 						heartDevices.add(device);
-						heartListAdapter.notifyDataSetChanged();
+						act.runOnUiThread(new Runnable() {
+							@Override
+							public void run()
+							{
+								heartListAdapter.notifyDataSetChanged();
+							}
+						});
 					}
 					else
 					{
@@ -294,7 +300,14 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 					{
 						format = BluetoothGattCharacteristic.FORMAT_UINT8;
 					}
-					act.updateHeart(characteristic.getIntValue(format, 1));
+					final int heartRate = characteristic.getIntValue(format, 1);
+					act.runOnUiThread(new Runnable() {
+						@Override
+						public void run()
+						{
+							act.updateHeart(heartRate);
+						}
+					});
 				}
 			}
 		});
