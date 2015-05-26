@@ -72,6 +72,8 @@ public class Tracker implements LocationListener
 	public boolean tracking = false;
 	public boolean paused = false;
 
+	public int heartRate = 0;
+
 	public Tracker(MoveBotActivity act, GoogleMap map, DeveloperFragment developerFragment)
 	{
 		this.act = act;
@@ -183,7 +185,7 @@ public class Tracker implements LocationListener
 			LatLng ll = new LatLng(location.getLatitude(), location.getLongitude());
 			latLngs.add(ll);
 			line.setPoints(latLngs);
-			double distance = run.newPoint(location);
+			double distance = run.newPoint(location, heartRate);
 			double speed = 0.0;
 			if(location.getSpeed() > 0)
 			{
@@ -207,5 +209,10 @@ public class Tracker implements LocationListener
 	@Override
 	public void onProviderDisabled(String provider)
 	{
+	}
+
+	public void updateHeartRate(int heartRate)
+	{
+		this.heartRate = heartRate;
 	}
 }

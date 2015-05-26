@@ -39,6 +39,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.pm.PackageManager;
@@ -115,39 +116,11 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 		}
 	}
 
-	/**
-	 * Thread to get HR info from the active device.
-	 */
-	private class HeartThread extends Thread
-	{
-		public volatile boolean running = true;
-		public HeartDevice device;
-
-		@Override
-		public void run()
-		{
-			if(!running)
-			{
-				return;
-			}
-			device.bluetoothGatt.readCharacteristic(device.characteristic);
-			try
-			{
-				Thread.sleep(1000);
-			}
-			catch(InterruptedException e)
-			{
-			}
-		}
-	}
-
 	private MoveBotActivity act;
 	private Button heartScan;
 	private ListView heartList;
 	private ArrayList<HeartDevice> heartDevices;
 	private ArrayAdapter<HeartDevice> heartListAdapter;
-
-	private HeartThread heartThread;
 
 	public HeartFragment()
 	{
@@ -173,14 +146,15 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id)
 			{
 				Log.d("HeartFragment", "Selecting device");
-				if(heartThread != null)
+				for(HeartDevice device : heartDevices)
 				{
-					heartThread.running = false;
-					heartThread = null;
+					device.bluetoothGatt.setCharacteristicNotification(device.characteristic, false);
 				}
-				heartThread = new HeartThread();
-				heartThread.device = heartDevices.get(position);
-				heartThread.start();
+				HeartDevice device = heartDevices.get(position);
+				device.bluetoothGatt.setCharacteristicNotification(device.characteristic, true);
+				BluetoothGattDescriptor descriptor = device.characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+				descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+				device.bluetoothGatt.writeDescriptor(descriptor);
 			}
 		});
 		heartScan.setOnClickListener(this);
@@ -211,6 +185,11 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 		Log.d("HeartFragment", "Starting scan");
 		heartScan.setClickable(false);
 		heartScan.setText("Scanning...");
+		for(HeartDevice device : heartDevices)
+		{
+			device.bluetoothGatt.disconnect();
+			device.bluetoothGatt.close();
+		}
 		heartDevices.clear();
 		heartListAdapter.notifyDataSetChanged();
 		bluetoothAdapter.startLeScan(new UUID[]{UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb")}, this);
@@ -223,6 +202,7 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 				bluetoothAdapter.stopLeScan(t);
 				heartScan.setText("Scan");
 				heartScan.setClickable(true);
+				heartListAdapter.notifyDataSetChanged();
 			}
 		}, 5000);
 	}
@@ -263,52 +243,51 @@ public class HeartFragment extends Fragment implements View.OnClickListener, Blu
 						HeartDevice device = new HeartDevice();
 						device.bluetoothGatt = gatt;
 						device.characteristic = characteristic;
-						heartDevices.add(device);
-						act.runOnUiThread(new Runnable() {
-							@Override
-							public void run()
+						for(HeartDevice testDevice : heartDevices)
+						{
+							if(testDevice.bluetoothGatt.getDevice().getAddress().equals(device.bluetoothGatt.getDevice().getAddress()))
 							{
-								heartListAdapter.notifyDataSetChanged();
+								heartDevices.remove(testDevice);
 							}
-						});
+						}
+						heartDevices.add(device);
 					}
 					else
 					{
 						Log.d("HeartFragment", "Device does not have HRM characteristic");
 						gatt.disconnect();
+						gatt.close();
 					}
 				}
 				else
 				{
 					Log.w("HeartFragment", "Failed to discover device services");
 					gatt.disconnect();
+					gatt.close();
 				}
 			}
 
 			@Override
-			public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status)
+			public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
 			{
-				if(status == BluetoothGatt.GATT_SUCCESS)
+				int flag = characteristic.getProperties();
+				int format = -1;
+				if((flag & 0x01) != 0)
 				{
-					int flag = characteristic.getProperties();
-					int format = -1;
-					if((flag & 0x01) != 0)
-					{
-						format = BluetoothGattCharacteristic.FORMAT_UINT16;
-					}
-					else
-					{
-						format = BluetoothGattCharacteristic.FORMAT_UINT8;
-					}
-					final int heartRate = characteristic.getIntValue(format, 1);
-					act.runOnUiThread(new Runnable() {
-						@Override
-						public void run()
-						{
-							act.updateHeart(heartRate);
-						}
-					});
+					format = BluetoothGattCharacteristic.FORMAT_UINT16;
 				}
+				else
+				{
+					format = BluetoothGattCharacteristic.FORMAT_UINT8;
+				}
+				final int heartRate = characteristic.getIntValue(format, 1);
+				act.runOnUiThread(new Runnable() {
+					@Override
+					public void run()
+					{
+						act.updateHeart(heartRate);
+					}
+				});
 			}
 		});
 	}

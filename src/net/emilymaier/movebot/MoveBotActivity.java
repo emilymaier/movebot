@@ -716,6 +716,7 @@ public class MoveBotActivity extends AppCompatActivity implements OnMapReadyCall
 	public void updateHeart(int heartRate)
 	{
 		hrText.setText(String.valueOf(heartRate));
+		tracker.updateHeartRate(heartRate);
 	}
 
 	/**

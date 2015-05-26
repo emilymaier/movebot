@@ -59,6 +59,7 @@ public class Run implements Serializable
 		public double longitude;
 		public double altitude;
 		public long time;
+		public int heartRate = 0;
 	}
 
 	private static final long serialVersionUID = 0L;
@@ -112,9 +113,10 @@ public class Run implements Serializable
 	/**
 	 * Adds a new GPS coordinate to the running session.
 	 * @param location the GPS coordinate
+	 * @param heartRate the heart rate
 	 * @return the total distance traveled this session
 	 */
-	public double newPoint(Location location)
+	public double newPoint(Location location, int heartRate)
 	{
 		ArrayList<LocationData> currentPoints = points.get(points.size() - 1);
 		if(!currentPoints.isEmpty())
@@ -132,6 +134,7 @@ public class Run implements Serializable
 		curData.longitude = location.getLongitude();
 		curData.altitude = location.getAltitude();
 		curData.time = location.getTime();
+		curData.heartRate = heartRate;
 		currentPoints.add(curData);
 		endTime = curData.time;
 		return distance;
@@ -158,16 +161,21 @@ public class Run implements Serializable
 		FileOutputStream xmlStream = context.openFileOutput(filename, Context.MODE_PRIVATE);
 		xml.setOutput(xmlStream, "utf-8");
 		xml.startDocument("UTF-8", true);
+		xml.setPrefix("gpxtpx", "gpxtpx");
+		xml.setPrefix("xsi", "xsi");
 		xml.startTag("", "gpx");
 		xml.attribute("", "xmlns", "http://www.topografix.com/GPX/1/1");
 		xml.attribute("xmlns", "xsi", "http://www.w3.org/2001/XMLSchema-instance");
-		xml.attribute("xsi", "schemaLocation", "http://www.topografix.com/GPX/1/1 gpx.xsd");
+		xml.attribute("gpxtpx", "xsi", "http://www.garmin.com/xmlschemas/TrackPointExtension/v1");
+		xml.attribute("xsi", "schemaLocation", "http://www.topografix.com/GPX/1/1 gpx.xsd https://www8.garmin.com/xmlschemas TrackPointExtensionv1.xsd");
 		xml.attribute("", "version", "1.1");
 		xml.attribute("", "creator", "Move Bot");
 		xml.startTag("", "trk");
+		xml.text("\n");
 		for(ArrayList<LocationData> currentPoints : points)
 		{
 			xml.startTag("", "trkseg");
+			xml.text("\n");
 			for(LocationData location : currentPoints)
 			{
 				xml.startTag("", "trkpt");
@@ -181,9 +189,18 @@ public class Run implements Serializable
 				sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 				xml.text(sdf.format(new Date(location.time)));
 				xml.endTag("", "time");
+				xml.startTag("", "extensions");
+				xml.startTag("gpxtpx", "TrackPointExtension");
+				xml.startTag("gpxtpx", "hr");
+				xml.text(String.valueOf(location.heartRate));
+				xml.endTag("gpxtpx", "hr");
+				xml.endTag("gpxtpx", "TrackPointExtension");
+				xml.endTag("", "extensions");
 				xml.endTag("", "trkpt");
+				xml.text("\n");
 			}
 			xml.endTag("", "trkseg");
+			xml.text("\n");
 		}
 		xml.endTag("", "trk");
 		xml.endTag("", "gpx");
